@@ -5,11 +5,11 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: quizdb
+      MYSQL_DATABASE: userdb  
       MYSQL_USER: daniel
       MYSQL_PASSWORD: V7n8=6nkHy@*
-    volumes:
-      - ./init-scripts:/docker-entrypoint-initdb.d 
     ports:
     - "3306:3306"
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d 
 
