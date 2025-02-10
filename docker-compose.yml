@@ -12,3 +12,16 @@ services:
     - "3306:3306"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
+
+
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    restart: always
+    ports:
+      - "11211:11211" 
+    command:
+      - --conn-limit=1024
+      - --memory-limit=64
+      - --threads=4
+
