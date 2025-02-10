@@ -13,6 +13,18 @@ services:
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
 
+
+  elasticsearch:
+    image: elasticsearch:8.17.0
+    container_name: elasticsearch
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    restart: always  
+
   memcached:
     image: memcached:latest
     container_name: memcached
@@ -43,6 +55,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     ports:
     - 9092:9092
+
 
 
 
