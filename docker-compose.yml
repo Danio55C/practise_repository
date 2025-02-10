@@ -12,6 +12,18 @@ services:
     - "3306:3306"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
+
+  memcached:
+    image: memcached:latest
+    container_name: memcached
+    restart: always
+    ports:
+      - "11211:11211" 
+    command:
+      - --conn-limit=1024
+      - --memory-limit=64
+      - --threads=4
+
  
   broker:
     image: apache/kafka:latest
@@ -31,6 +43,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     ports:
     - 9092:9092
+
 
 
 
