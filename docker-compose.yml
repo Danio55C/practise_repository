@@ -12,4 +12,3 @@ services:
     - "3306:3306"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
-
