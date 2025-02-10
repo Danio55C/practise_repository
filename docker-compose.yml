@@ -1,6 +1,6 @@
 version: '3.8'
 services:
- mysql:
+  mysql:
     image: mysql:latest
     restart: always
     environment:
@@ -12,7 +12,6 @@ services:
     - "3306:3306"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
-    
  
  broker:
     image: apache/kafka:latest
@@ -32,6 +31,7 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     ports:
     - 9092:9092
+
 
 
 
