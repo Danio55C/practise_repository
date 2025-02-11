@@ -1,3 +1,5 @@
+use userdb;
+
 
 CREATE TABLE users (
     Userid INT NOT NULL  AUTO_INCREMENT PRIMARY KEY,

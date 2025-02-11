@@ -6,8 +6,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: userdb  
-      MYSQL_USER: daniel
-      MYSQL_PASSWORD: V7n8=6nkHy@*
+    
+      
     ports:
     - "3306:3306"
     volumes:
@@ -58,8 +58,10 @@ services:
   python:
     build: ./python
     container_name: python
-    command: python3 main.py
+    command: sh -c "sleep 10s ; python3 main.py"
     restart: no
+    depends_on:
+      - mysql
     
 
  
