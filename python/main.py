@@ -1,4 +1,5 @@
 import mysql.connector
+from pymemcache.client.base import Client
 
 connection = mysql.connector.connect(
     user="root", password="root", host="mysql", port="3306", database="userdb")
@@ -11,3 +12,11 @@ connection.close()
 
 
 print(users)
+
+
+############################
+
+client =Client(("memcached", 11211))
+client.set("foo","Hello World!!")
+
+print(client.get("foo"))
