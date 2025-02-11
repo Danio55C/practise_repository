@@ -1,7 +1,6 @@
-FROM ubuntu:latest
+FROM python:3.9
 
-RUN apt update
-RUN apt install python3 -y   
+RUN pip install mysql-connector-python
 
 WORKDIR /usr/app/src
 
