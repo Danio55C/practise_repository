@@ -1,5 +1,10 @@
 import mysql.connector
 from pymemcache.client.base import Client
+from elasticsearch import Elasticsearch
+from datetime import datetime
+from kafka import KafkaProducer, KafkaConsumer
+
+
 
 
 connection = mysql.connector.connect(
@@ -10,8 +15,6 @@ cursor=connection.cursor()
 cursor.execute("SELECT * FROM users")
 users = cursor.fetchall()
 connection.close()
-
-
 print(users)
 
 
@@ -25,8 +28,6 @@ print(client.get("foo"))
 
 ############################
 
-from elasticsearch import Elasticsearch
-from datetime import datetime
 
 client = Elasticsearch("http://elasticsearch:9200")
 
@@ -47,5 +48,21 @@ resp = client.search(index="test-index", query={"match_all": {}})
 print("Got {} hits:".format(resp["hits"]["total"]["value"]))
 for hit in resp["hits"]["hits"]:
     print("{timestamp} {author} {text}".format(**hit["_source"]))
+    print(" ")
+
+###########################################################
+
+
+producer = KafkaProducer(bootstrap_servers="kafka:9092")       ####producer
+producer.send("test-topic", b"Kafka - Hello from Python!")
+producer.flush()
+
+consumer = KafkaConsumer("test-topic", bootstrap_servers="kafka:9092",auto_offset_reset="earliest")   ####consumer
+for message in consumer:
+    print(f"Kafka - Received message: {message.value}") 
+    break 
+
+###########################################################
+
 
 
