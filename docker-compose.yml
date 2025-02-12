@@ -58,10 +58,12 @@ services:
   python:
     build: ./python
     container_name: python
-    command: sh -c "sleep 10s ; python3 main.py"
+    command: sh -c "sleep 20s ; python3 main.py"
     restart: no
     depends_on:
       - mysql
+      - elasticsearch
+      - memcached
     
 
  
