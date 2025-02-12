@@ -2,8 +2,8 @@ import mysql.connector
 from pymemcache.client.base import Client
 from elasticsearch import Elasticsearch
 from datetime import datetime
-import time
 from kafka import KafkaProducer, KafkaConsumer
+
 
 
 
@@ -62,6 +62,7 @@ for message in consumer:
     print(f"Kafka - Received message: {message.value}") 
     break 
 
+###########################################################
 
-producer.close()
-consumer.close()
+
+
