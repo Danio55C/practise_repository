@@ -25,7 +25,7 @@ client = Client(("memcached", 11211))
 print("\nMemcached - Storing the value")
 
 client.set("foo","Hello World!!")
-print("Memcached stored and retrieved value: " + str(client.get("foo")))
+print("Memcached stored and retrieved value: " + str(client.get("foo").decode("utf-8")))
 
 
 ############ elasticsearch ################
@@ -57,15 +57,18 @@ for hit in resp["hits"]["hits"]:
 
 producer = KafkaProducer(bootstrap_servers="kafka:9092")       ####producer
 producer.send("test-topic", b"Kafka - Hello from Python!")
+print("\nKafka - producer send message")
 producer.flush()
 
 consumer = KafkaConsumer("test-topic", bootstrap_servers="kafka:9092",auto_offset_reset="earliest")   ####consumer
 for message in consumer:
-    print(f"\nKafka - Received message: {message.value}") 
+    print(f"Consumer received message: {message.value.decode('utf-8')}") 
+    
     break 
 
 producer.close()
 consumer.close() 
 
 
-
+##########
+print("\nEnd of the script: all services tested succesfully")

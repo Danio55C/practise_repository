@@ -10,6 +10,8 @@ services:
     - "3306:3306"
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
+      - mysql_data:/var/lib/mysql 
+      
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
@@ -57,7 +59,11 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
-    restart: always  
+    restart: always
+    volumes:
+      - es_data:/usr/share/elasticsearch/data  
+
+
 
   python:
     build: ./python
@@ -69,7 +75,12 @@ services:
       - kafka
       - memcached
       - elasticsearch
-    
+
+volumes:
+    es_data:
+      driver: local
+    mysql_data:
+      driver: local    
 
  
   
