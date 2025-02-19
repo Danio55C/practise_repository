@@ -63,10 +63,27 @@ def generate_alert():
 #   'Message': f"An {severity_levels[1]} level error has ocured: {alert_name[1]} on {str(today)}"
 # }
 
-for x in range(6):
-    data_alert1 = generate_alert()
-    cursor.execute(insert_alert_query, data_alert1)
 
+
+######################################### I don't even know dóde #################################
+
+Topic_Name = 'alerts'
+
+producer = KafkaProducer(
+    bootstrap_servers="kafka:9092",  
+    value_serializer=lambda m: json.dumps(m).encode('ascii')  
+)
+
+
+
+
+
+for x in range(6):
+    data_alerts = generate_alert()
+    producer.send(Topic_Name, value = data_alerts["message"])
+    cursor.execute(insert_alert_query, data_alerts)
+
+producer.flush()
 
 db_connection.commit()
 print(f"MySQL - Data inserted successfully")
@@ -78,20 +95,6 @@ print(f"MySQL -alerts: {alerts}")
 cursor.close()
 db_connection.close()
 
-######################################### KAFKA #################################
-
-Topic_Name = 'alerts'
-
-producer = KafkaProducer(
-    bootstrap_servers="kafka:9092",  
-    value_serializer=lambda m: json.dumps(m).encode('ascii')  
-)
-
-for x in range(6):
-    data_alert_kafka = generate_alert()
-    producer.send(Topic_Name, value = data_alert_kafka["message"])
-
-producer.flush()
 
 print("\nalerts sent successfully")
 
