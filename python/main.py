@@ -4,6 +4,7 @@ from datetime import date, datetime
 import random
 import json
 from kafka import KafkaProducer, KafkaConsumer
+from elasticsearch import Elasticsearch
 
 
 def create_mysqlconnection(user_name, password, host, port, database_name):
@@ -74,29 +75,43 @@ producer = KafkaProducer(
     value_serializer=lambda m: json.dumps(m).encode('ascii')  
 )
 
-
-
-
+client = Elasticsearch("http://elasticsearch:9200")
 
 for x in range(6):
     data_alerts = generate_alert()
     producer.send(Topic_Name, value = data_alerts["message"])
     cursor.execute(insert_alert_query, data_alerts)
+    client.index(index="alerts", id=x, document = data_alerts)
+
 
 producer.flush()
 
+
 db_connection.commit()
 print(f"MySQL - Data inserted successfully")
-
 cursor.execute("SELECT * FROM alerts")
+
 
 alerts = cursor.fetchall()
 print(f"MySQL -alerts: {alerts}")
 cursor.close()
 db_connection.close()
 
+client.indices.refresh(index="alerts")
+
+resp = client.search(index="alerts", query={"match_all": {}})
+print("\nGot {} hits:".format(resp["hits"]["total"]["value"]))
+for hit in resp["hits"]["hits"]:
+    print("{message}".format(**hit["_source"]))
+
+client.close()
+
 
 print("\nalerts sent successfully")
+
+
+########################
+
 
 
 
