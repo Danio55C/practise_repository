@@ -1,0 +1,21 @@
+-Create a Python script that generates synthetic alert data and inserts it into MySQL.
+-Generate sample Kafka messages (JSON format) with randomized alert types, timestamps, and severity l
+-Store enriched sample data in Elasticsearch for testing.
+
+
+
+Consume Kafka messages in Python.
+Retrieve related data from Memcache & MySQL.
+Enrich each alert with: A hash field. A risk score based on severity & past alert patterns.
+Store the enriched data back in Kafka & Elasticsearch.
+
+
+Implement structured logging using loguru 
+Set up basic monitoring with Prometheus & Grafana 
+Log error messages for failed database/Kafka connections 
+Log some performance metrics (execution time for some key functions)
+
+
+Use Python (pandas, matplotlib, seaborn) to explore synthetic alert data
+Plot: Alert frequency over time, Top alert types and their severities...
+Test Elasticsearch queries to fetch alerts efficiently.    
