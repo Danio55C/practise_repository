@@ -2,7 +2,7 @@ use userdb;
 
 
 CREATE TABLE users (
-    Userid INT NOT NULL  AUTO_INCREMENT PRIMARY KEY,
+    Userid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR (100),
     SecondName VARCHAR(100) NOT NULL,
     Country VARCHAR(100),
@@ -17,6 +17,14 @@ INSERT INTO users (Name, SecondName, Country, Age) VALUES
 ('Liam', 'Müller', 'Germany', 35),
 ('Daniel', 'Janca', 'Poland', 24);
 
+
+CREATE TABLE alerts (
+    Alertid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    AlertName VARCHAR (100),
+    SeverityLevel VARCHAR(20),
+    Message TEXT,
+    Timestamp DATETIME
+);
 
 
 
