@@ -6,6 +6,18 @@ import json
 from kafka import KafkaProducer, KafkaConsumer
 from elasticsearch import Elasticsearch
 
+def generate_alert():
+    alert_name = random.choice(alert_names)
+    severity_level = random.choice(severity_levels)
+    timestamp = datetime.now()
+    message = f"An {severity_level} level error has ocured: {alert_name} on {str(timestamp)}"
+
+    return {
+    "alert_name":alert_name, 
+    "severity_level":severity_level, 
+    "timestamp":timestamp, 
+    "message":message
+    }
 
 def create_mysqlconnection(user_name, password, host, port, database_name):
     connection = None
@@ -43,18 +55,7 @@ insert_alert_query = ("INSERT INTO alerts "
 alert_names = ["Memory Leak", "Network Issue","Too Many Connections","Database Connection Lost","Missing Index Warning","Inconsistent Data Found"]
 severity_levels = ["Low", "Medium", "High", "Critical"]
 
-def generate_alert():
-    alert_name = random.choice(alert_names)
-    severity_level = random.choice(severity_levels)
-    timestamp = datetime.now()
-    message = f"An {severity_level} level error has ocured: {alert_name} on {str(timestamp)}"
 
-    return {
-    "alert_name":alert_name, 
-    "severity_level":severity_level, 
-    "timestamp":timestamp, 
-    "message":message
-    }
 
 
 # data_alert1 = {
@@ -66,7 +67,7 @@ def generate_alert():
 
 
 
-######################################### I don't even know dóde #################################
+######################################### #################################
 
 Topic_Name = 'alerts'
 
@@ -100,17 +101,36 @@ db_connection.close()
 client.indices.refresh(index="alerts")
 
 resp = client.search(index="alerts", query={"match_all": {}})
-print("\nGot {} hits:".format(resp["hits"]["total"]["value"]))
+print("\n Elastic search: Got {} hits:".format(resp["hits"]["total"]["value"]))
 for hit in resp["hits"]["hits"]:
     print("{message}".format(**hit["_source"]))
 
 client.close()
 
 
+########################
+
+
+consumer = KafkaConsumer(Topic_Name,
+    group_id= "alerts",
+    bootstrap_servers="kafka:9092",
+    value_deserializer=lambda m: json.loads(m.decode('ascii')),
+    auto_offset_reset='earliest', enable_auto_commit=False,
+    consumer_timeout_ms=5000
+)
+
+print("")
+for message in consumer:
+    print (f"Consumer received message: {message.value}")
+
+     
+
+producer.close()
+consumer.close() 
+
+
 print("\nalerts sent successfully")
 
-
-########################
 
 
 
