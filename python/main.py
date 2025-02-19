@@ -78,7 +78,22 @@ print(f"MySQL -alerts: {alerts}")
 cursor.close()
 db_connection.close()
 
+######################################### KAFKA #################################
 
+Topic_Name = 'alerts'
+
+producer = KafkaProducer(
+    bootstrap_servers="kafka:9092",  
+    value_serializer=lambda m: json.dumps(m).encode('ascii')  
+)
+
+for x in range(6):
+    data_alert_kafka = generate_alert()
+    producer.send(Topic_Name, value = data_alert_kafka["message"])
+
+producer.flush()
+
+print("\nalerts sent successfully")
 
 
 
