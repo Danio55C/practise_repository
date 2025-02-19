@@ -9,6 +9,14 @@ CREATE TABLE users (
     Age INT
 );
 
+CREATE TABLE alerts (
+    Alertid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    AlertName VARCHAR (100),
+    SeverityLevel VARCHAR(20),
+    Timestamp DATETIME,
+    Message TEXT
+);
+
 INSERT INTO users (Name, SecondName, Country, Age) VALUES
 ('John', 'Doe', 'USA', 30),
 ('Alice', 'Smith', 'UK', 25),
@@ -18,13 +26,7 @@ INSERT INTO users (Name, SecondName, Country, Age) VALUES
 ('Daniel', 'Janca', 'Poland', 24);
 
 
-CREATE TABLE alerts (
-    Alertid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    AlertName VARCHAR (100),
-    SeverityLevel VARCHAR(20),
-    Message TEXT,
-    Timestamp DATETIME
-);
+
 
 
 
