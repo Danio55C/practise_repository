@@ -7,6 +7,8 @@ from kafka import KafkaProducer, KafkaConsumer
 from elasticsearch import Elasticsearch
 from pymemcache.client.base import Client
 import time
+import hashlib
+import uuid
 
 def generate_alert():
     alert_name = random.choice(alert_names)
@@ -101,10 +103,10 @@ print("\n Elastic search: Got {} hits:".format(resp["hits"]["total"]["value"]))
 for hit in resp["hits"]["hits"]:
     print("{message}".format(**hit["_source"]))
 
-client.close()
 
 
-########################
+
+###########kafka consumer#############
 
 
 consumer = KafkaConsumer(Topic_Name,
@@ -121,8 +123,7 @@ for message_alerts in consumer:
 
      
 
-producer.close()
-consumer.close() 
+ 
 
 ######retrieve related data########
 
@@ -141,15 +142,79 @@ if not alerts_memcached :
 else: 
     print(f"\nData found in cache:\n{alerts_memcached}")
 
+
+############hash_field###############
+
+cursor.execute("ALTER TABLE alerts ADD COLUMN HashField VARCHAR(100)")
+cursor.execute("ALTER TABLE alerts ADD COLUMN RiskScore INT")
+db_connection.commit()
+
+cursor.execute("SELECT Alertid, AlertName, SeverityLevel, Timestamp, Message FROM alerts")
+alerts = cursor.fetchall()
+
+severity_mapping = {
+    "Low": 1,
+    "Medium": 3,
+    "High": 5,
+    "Critical": 8
+}
+        
+for alert in alerts:
+    alert_id, alert_name, severity_level, timestamp,message= alert
+    cursor.execute("SELECT COUNT(*) FROM alerts WHERE AlertName = %s", (alert_name,))
+    past_alerts_count = cursor.fetchone()[0]
+    severity_score = severity_mapping.get(severity_level, 1)
+    risk_score = severity_score + (past_alerts_count // 2)
+    
+    alert_data = {
+        "alert_name": alert_name,
+        "severity_level": severity_level,
+        "risk_score": risk_score,  
+        "timestamp": str(timestamp),
+        "message": message
+    }
+    
+    message = f"An {severity_level} level error has ocured: {alert_name} and {risk_score} risk score on {str(timestamp)}"
+    hash_field = hashlib.sha256(json.dumps(alert_data, sort_keys=True).encode()).hexdigest()
+    ##to do - read more about hashfield and library
+    
+    cursor.execute("UPDATE alerts SET HashField = %s, RiskScore = %s, Message = %s WHERE Alertid = %s",
+                   (hash_field, risk_score, message, alert_id))  
+
+
+
+
+
+db_connection.commit()
+
+
+
+#####sending data back ###########
+
+cursor.execute("SELECT * FROM alerts")
+rows = cursor.fetchall()
+columns = [desc[0] for desc in cursor.description]
+enriched_data = [dict(zip(columns, row)) for row in rows]
+print(" ")
+print(enriched_data)
+
+for alert in enriched_data:
+    producer.send(Topic_Name, value=alert["Message"])
+    client.index(index="alerts", id=str(uuid.uuid4()), document = alert)
+   
+producer.flush()
+
+
+producer.close()
+consumer.close()
+client.close()
+
+print("\ndata enriched")
+
 cursor.close()
 db_connection.close()
 
-###########################
-
-
-
-
-print("\nalerts sent successfully")
+print("\nend of the script")
 
 
 
