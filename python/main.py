@@ -5,6 +5,8 @@ import random
 import json
 from kafka import KafkaProducer, KafkaConsumer
 from elasticsearch import Elasticsearch
+from pymemcache.client.base import Client
+import time
 
 def generate_alert():
     alert_name = random.choice(alert_names)
@@ -89,14 +91,8 @@ producer.flush()
 
 
 db_connection.commit()
-print(f"MySQL - Data inserted successfully")
-cursor.execute("SELECT * FROM alerts")
+print("MySQL - Data inserted successfully")
 
-
-alerts = cursor.fetchall()
-print(f"MySQL -alerts: {alerts}")
-cursor.close()
-db_connection.close()
 
 client.indices.refresh(index="alerts")
 
@@ -120,13 +116,37 @@ consumer = KafkaConsumer(Topic_Name,
 )
 
 print("")
-for message in consumer:
-    print (f"Consumer received message: {message.value}")
+for message_alerts in consumer:
+    print (f"Consumer received message: {message_alerts.value}")
 
      
 
 producer.close()
 consumer.close() 
+
+######retrieve related data########
+
+client_memcached = Client(("memcached", 11211))
+alert_id = 3
+cache_key = f"alerts_{alert_id}"
+alerts_memcached = client_memcached.get(cache_key) 
+sql_alerts_query = "SELECT * FROM alerts WHERE Alertid = %s"
+
+if not alerts_memcached :
+    print("\nData not found in cache, searching in mysql database: ") 
+    cursor.execute(sql_alerts_query,(alert_id,)) 
+    alerts_memcached = cursor.fetchall()
+    client_memcached.set(cache_key, alerts_memcached, expire=300)
+    print(alerts_memcached)
+else: 
+    print(f"\nData found in cache:\n{alerts_memcached}")
+
+cursor.close()
+db_connection.close()
+
+###########################
+
+
 
 
 print("\nalerts sent successfully")
