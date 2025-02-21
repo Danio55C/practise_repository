@@ -1,7 +1,8 @@
+CREATE DATABASE IF NOT EXISTS userdb;
 use userdb;
 
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     Userid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     Name VARCHAR (100),
     SecondName VARCHAR(100) NOT NULL,
@@ -9,7 +10,7 @@ CREATE TABLE users (
     Age INT
 );
 
-CREATE TABLE alerts (
+CREATE TABLE IF NOT EXISTS alerts (
     Alertid INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     AlertName VARCHAR (100),
     SeverityLevel VARCHAR(20),
@@ -17,7 +18,7 @@ CREATE TABLE alerts (
     Message TEXT
 );
 
-INSERT INTO users (Name, SecondName, Country, Age) VALUES
+INSERT IGNORE INTO users (Name, SecondName, Country, Age) VALUES
 ('John', 'Doe', 'USA', 30),
 ('Alice', 'Smith', 'UK', 25),
 ('Carlos', 'Gomez', 'Spain', 40),
