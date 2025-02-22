@@ -8,6 +8,7 @@ from elasticsearch import Elasticsearch
 from pymemcache.client.base import Client
 import hashlib
 import uuid
+from loguru import logger
 
 
 alert_names = ["Memory Leak", "Network Issue", "Too Many Connections", "Database Connection Lost", "Missing Index Warning", "Inconsistent Data Found"]
@@ -185,7 +186,7 @@ cursor.close()
 db_connection.close()
 print("\nEnd of the script")
 
-
+logger.debug("That's it, beautiful and simple logging!")
 
 
 
