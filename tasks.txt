@@ -2,8 +2,6 @@
 -Generate sample Kafka messages (JSON format) with randomized alert types, timestamps, and severity l
 -Store enriched sample data in Elasticsearch for testing.
 
-
-
 -Consume Kafka messages in Python.
 -Retrieve related data from Memcache & MySQL.
 -Enrich each alert with: A hash field. A risk score based on severity & past alert patterns.
