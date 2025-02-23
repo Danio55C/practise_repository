@@ -78,6 +78,7 @@ services:
       - elasticsearch
     volumes:
       - ./logs:/usr/app/src/logs
+      - ./output:/usr/app/src/output
 
   prometheus:
     image: prom/prometheus
