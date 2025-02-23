@@ -68,14 +68,23 @@ insert_alert_query = ("INSERT INTO alerts "
                       "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
 
 # **Kafka and elsticsearch config**
-Topic_Name = 'alerts'
-producer = KafkaProducer(
-    bootstrap_servers="kafka:9092",  
-    value_serializer=lambda m: json.dumps(m).encode('ascii')  
-)
+try:
+    Topic_Name = 'alerts'
+    producer = KafkaProducer(
+        bootstrap_servers="kafka:9092",  
+        value_serializer=lambda m: json.dumps(m).encode('ascii')  
+    )
+    logger.info("Kafka - Success connectiong to broker")
+except Exception as e:
+    logger.error(f"Kafka - Error has ocured while connection to broker: {e}")
 
-client = Elasticsearch("http://elasticsearch:9200")
 
+
+try:
+    client = Elasticsearch("http://elasticsearch:9200")
+    logger.info("Elsticsearch - Connection to DB successful")
+except Error as e:
+    logger.error(f"ElasticSearch - Error has ocured while trying to connect to DB: '{e}'")
 
 # **Generate random alerts and send them to mysql kafka and elasticsearch**
 for x in range(6):
