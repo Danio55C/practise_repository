@@ -9,10 +9,18 @@ from pymemcache.client.base import Client
 import hashlib
 import uuid
 from loguru import logger
+import os
 
 
 alert_names = ["Memory Leak", "Network Issue", "Too Many Connections", "Database Connection Lost", "Missing Index Warning", "Inconsistent Data Found"]
-severity_levels = ["Low", "Medium", "High", "Critical"]
+
+severity_levels = [ "Warning", "Error", "Critical Error"]
+
+log_file_path = "/usr/app/src/logs/file_logs.log"
+os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
+
+logger.add(log_file_path, rotation="1 week", level="WARNING", format='{{"time": "{time}", "level": "{level}", "message": "{message}"}}')
+logger.info("Logger initialized, writing logs to file_logs.log")
 
 def generate_alert():
     alert_name = random.choice(alert_names)
@@ -37,9 +45,9 @@ def create_mysqlconnection(user_name, password, host, port, database_name):
             port=port, 
             database=database_name
         ) 
-        print("MySQL - Connection to DB successful")    
+        logger.info("MySQL - Connection to DB successful")    
     except Error as e:
-        print(f"MySQL - Error occurred while trying to connect to DB: '{e}'")
+        logger.error(f"MySQL - Error occurred while trying to connect to DB: '{e}'")
     return connection 
 
 #mysql Database configuration
@@ -78,7 +86,7 @@ for x in range(6):
 
 producer.flush()
 db_connection.commit()
-print("Data inserted successfully")
+logger.info("Data inserted successfully\n")
 
 
 # **Kafka Consumer messages**
@@ -91,9 +99,9 @@ consumer = KafkaConsumer(
     consumer_timeout_ms=5000
 )
 
-print("")
-for message_alerts in consumer:
-    print(f"Consumer received message: {message_alerts.value}")
+# for message_alerts in consumer:
+#     logger.error(f"Consumer received message: {message_alerts.value}\n")
+    
 
 
 # **Retrieve related data form MYSQL or Memcached**
@@ -104,13 +112,13 @@ alerts_memcached = client_memcached.get(cache_key)
 sql_alerts_query = "SELECT * FROM alerts WHERE Alertid = %s"
 
 if not alerts_memcached:
-    print("\nData not found in cache, searching in MySQL database: ") 
+    logger.info("\nData not found in cache, searching in MySQL database: ") 
     cursor.execute(sql_alerts_query, (alert_id,)) 
     alerts_memcached = cursor.fetchall()
     client_memcached.set(cache_key, alerts_memcached, expire=300)
-    print(alerts_memcached)
+    logger.debug(alerts_memcached)
 else: 
-    print(f"\nData found in cache:\n{alerts_memcached}")
+    logger.debug(f"\nData found in cache:\n{alerts_memcached}")
 
 
 # **Enrichinh data - Adding risk score and hashfield**
@@ -130,9 +138,8 @@ cursor.execute("SELECT Alertid, AlertName, SeverityLevel, Timestamp, Message FRO
 alerts = cursor.fetchall()
 
 severity_mapping = {
-    "Low": 1,
-    "Medium": 3,
-    "High": 5,
+    "Warning": 1,
+    "Error": 4,
     "Critical": 8
 }
 
@@ -151,7 +158,7 @@ for alert in alerts:
         "message": message
     }
     
-    message = f"An {severity_level} level error has occurred: {alert_name} and {risk_score} risk score on {str(timestamp)}"
+    message = f"An {severity_level} has occurred: {alert_name} and {risk_score} risk score on {str(timestamp)}"
     hash_field = hashlib.sha256(json.dumps(alert_data, sort_keys=True).encode()).hexdigest()
     
     cursor.execute("UPDATE alerts SET HashField = %s, RiskScore = %s, Message = %s WHERE Alertid = %s",
@@ -167,14 +174,20 @@ columns = [desc[0] for desc in cursor.description]
 enriched_data = [dict(zip(columns, row)) for row in rows]
 
 print(" ")
-print(enriched_data)
+logger.debug(enriched_data)
 
 for alert in enriched_data:
     producer.send(Topic_Name, value=alert["Message"])
     client.index(index="alerts", id=str(uuid.uuid4()), document=alert)
+    if alert["SeverityLevel"] == "Warning":
+        logger.warning(f"{alert['Message']}\n")
+    if alert["SeverityLevel"] == "Error":
+        logger.error(f"{alert['Message']}\n")
+    if alert["SeverityLevel"] == "Critical Error":
+        logger.critical(f"{alert['Message']}\n")      
 
 producer.flush()
-print("\nData enriched")
+logger.info("\nData enriched")
 
 
 # **closing connections**
@@ -184,9 +197,9 @@ client.close()
 
 cursor.close()
 db_connection.close()
-print("\nEnd of the script")
+logger.info("\nEnd of the script")
 
-logger.debug("That's it, beautiful and simple logging!")
+
 
 
 

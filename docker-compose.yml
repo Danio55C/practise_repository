@@ -76,6 +76,8 @@ services:
       - kafka
       - memcached
       - elasticsearch
+    volumes:
+      - ./logs:/usr/app/src/logs
 
 volumes:
     es_data:
