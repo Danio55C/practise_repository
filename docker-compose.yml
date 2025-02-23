@@ -11,8 +11,7 @@ services:
     volumes:
       - ./init-scripts:/docker-entrypoint-initdb.d 
       - mysql_data:/var/lib/mysql 
-      
-
+                    
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4
     container_name: zookeeper
@@ -38,8 +37,9 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-    restart: always   
-       
+    restart: always
+
+
   memcached:
       image: memcached:latest
       container_name: memcached
@@ -76,6 +76,33 @@ services:
       - kafka
       - memcached
       - elasticsearch
+    volumes:
+      - ./logs:/usr/app/src/logs
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    container_name: prometheus 
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    container_name: grafana  
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=123456
+    networks:
+      - monitoring    
+
+#internal network only for the conteners in this compose
+networks:
+  monitoring:
+    driver: bridge  
 
 volumes:
     es_data:

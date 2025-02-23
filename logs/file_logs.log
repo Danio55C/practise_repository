@@ -1,0 +1,24 @@
+
+"}
+{"time": "2025-02-23T16:28:30.677288+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Database Connection Lost and 2 risk score on 2025-02-23 16:28:30
+"}
+{"time": "2025-02-23T16:28:30.684332+0000", "level": "ERROR", "message": "An Error has occurred: Database Connection Lost and 5 risk score on 2025-02-23 16:28:30
+"}
+{"time": "2025-02-23T16:28:30.692514+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Inconsistent Data Found and 2 risk score on 2025-02-23 16:28:30
+"}
+{"time": "2025-02-23T16:28:30.700336+0000", "level": "WARNING", "message": "An Warning has occurred: Database Connection Lost and 2 risk score on 2025-02-23 16:28:30
+"}
+{"time": "2025-02-23T16:28:30.708107+0000", "level": "ERROR", "message": "An Error has occurred: Network Issue and 4 risk score on 2025-02-23 16:28:30
+"}
+{"time": "2025-02-23T16:45:06.312625+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Network Issue and 3 risk score on 2025-02-23 16:45:05
+"}
+{"time": "2025-02-23T16:45:06.320934+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Network Issue and 3 risk score on 2025-02-23 16:45:06
+"}
+{"time": "2025-02-23T16:45:06.335511+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Database Connection Lost and 1 risk score on 2025-02-23 16:45:06
+"}
+{"time": "2025-02-23T16:45:06.343055+0000", "level": "WARNING", "message": "An Warning has occurred: Too Many Connections and 1 risk score on 2025-02-23 16:45:06
+"}
+{"time": "2025-02-23T16:45:06.351499+0000", "level": "ERROR", "message": "An Error has occurred: Network Issue and 6 risk score on 2025-02-23 16:45:06
+"}
+{"time": "2025-02-23T16:45:06.361397+0000", "level": "CRITICAL", "message": "An Critical Error has occurred: Network Issue and 3 risk score on 2025-02-23 16:45:06
+"}
