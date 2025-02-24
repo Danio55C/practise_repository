@@ -12,7 +12,12 @@ from loguru import logger
 import os
 import time
 import pandas as pd
+import numpy as np
+from pandas.plotting import table 
+import dataframe_image as dfi
+import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 start_time = time.time()
@@ -37,10 +42,15 @@ logger.info("Logger initialized, writing logs to file_logs.log")
 alert_names = ["Memory Leak", "Network Issue", "Too Many Connections", "Database Connection Lost", "Missing Index Warning", "Inconsistent Data Found"]
 severity_levels = [ "Warning", "Error", "Critical Error"]
 
+start_date = pd.Timestamp.now() - pd.Timedelta(days=1) 
+end_date = pd.Timestamp.now()
+
+random_dates = pd.to_datetime(np.random.uniform(start_date.value, end_date.value, 30))
+
 def generate_alert():
     alert_name = random.choice(alert_names)
     severity_level = random.choice(severity_levels)
-    timestamp = datetime.now()
+    timestamp = random.choice(random_dates)
     message = f"An {severity_level} level error has occurred: {alert_name} on {str(timestamp)}"
     
     return {
@@ -95,7 +105,7 @@ db_connection = create_mysqlconnection(**my_config)
 cursor = db_connection.cursor()
 
 # **Generate random alerts and send them to mysql kafka and elasticsearch**
-for x in range(6):
+for x in range(20):
     data_alerts = generate_alert()
     producer.send(Topic_Name, value=data_alerts["message"])
     cursor.execute(insert_alert_query, data_alerts)
@@ -214,24 +224,47 @@ producer.flush()
 logger.info("\nData enriched\n")
 
 
-# **Exploring alert data**
-enriched_data_df = pd.DataFrame.from_dict(enriched_data)
+# **Exploring alert data making code**
+
+##table from Dataframe
+enriched_data_df = pd.DataFrame(enriched_data).set_index("Alertid")
 print(enriched_data_df)
 
-fig, ax = plt.subplots(figsize=(8, 4))
-ax.axis('tight')
-ax.axis('off')
+vizualization_table_path = "/usr/app/src/output/dataframe_output.png"
+dfi.export(enriched_data_df, vizualization_table_path, table_conversion="matplotlib", dpi=300)
 
-table = plt.table(cellText=enriched_data_df.values, 
-                  colLabels=enriched_data_df.columns, 
-                  cellLoc='center', 
-                  loc='center')
+##top alerts based on severity level  
+plt.figure(figsize=(20, 16))
 
-vizualization_file_path = "/usr/app/src/output/dataframe_output.png"
-os.makedirs(os.path.dirname(vizualization_file_path), exist_ok=True)
-plt.savefig(vizualization_file_path, dpi=300)
+alert_counts = enriched_data_df.groupby("AlertName")["SeverityLevel"].value_counts().reset_index(name="Count")
 
+sns.barplot(data=alert_counts, x="AlertName", y="Count", hue="SeverityLevel", native_scale=True, palette="flare", dodge=True, width=0.8).set(xlabel=None)
 
+plt.title("Number of alerts grouped by severity level" , fontsize=25)
+plt.ylabel("Count",loc="center",fontsize=22)
+plt.xticks(rotation=0,fontsize=14)
+plt.legend(title="Severity Level", title_fontsize=16, fontsize=14) 
+plt.savefig("/usr/app/src/output/bar_alerts_chart.png", dpi=300)
+plt.close()
+
+##alert frequency over time 
+enriched_data_df["Timestamp"] = pd.to_datetime(enriched_data_df["Timestamp"])
+plt.figure(figsize=(20, 10))
+enriched_data_df["Timestamp"] = pd.to_datetime(enriched_data_df["Timestamp"])
+
+alert_time_series = enriched_data_df.groupby(pd.Grouper(key="Timestamp", freq="h")).size()
+
+sns.lineplot(x=alert_time_series.index, y=alert_time_series.values, marker="o", linestyle="-", color="b")
+
+plt.title("Alert Frequency Over Time", fontsize=25)
+plt.xlabel("Timestamp", fontsize=22)
+plt.ylabel("Number of Alerts", fontsize=22)
+plt.xticks(fontsize=14)
+plt.gca().xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%Y-%m-%d %H:%M"))
+plt.gca().xaxis.set_major_locator(matplotlib.dates.HourLocator(interval=4)) 
+
+plt.savefig("/usr/app/src/output/Alert_frequency_over_time.png", dpi=300)
+plt.close()
 
 
 # **closing connections**

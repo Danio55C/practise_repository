@@ -7,6 +7,9 @@ RUN pip install kafka-python
 RUN pip install loguru
 RUN pip install pandas
 RUN pip install matplotlib
+RUN pip install dataframe-image
+RUN pip install numpy
+RUN pip install seaborn
 
 
 
