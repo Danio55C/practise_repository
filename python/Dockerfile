@@ -1,18 +1,13 @@
 FROM python:3.9
 
-RUN pip install mysql-connector-python
-RUN pip install pymemcache
-RUN pip install elasticsearch
-RUN pip install kafka-python
-RUN pip install loguru
-RUN pip install pandas
-RUN pip install matplotlib
-RUN pip install dataframe-image
-RUN pip install numpy
-RUN pip install seaborn
 
+WORKDIR /usr/app
 
+COPY requirements.txt ./
+COPY . . 
 
-WORKDIR /usr/app/src
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py ./
+RUN mkdir -p /usr/app/logs && chmod -R 777 /usr/app/logs
+
+#CMD ["python", "main.py"]

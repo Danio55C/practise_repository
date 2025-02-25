@@ -1,0 +1,10 @@
+mysql-connector-python
+pymemcache
+elasticsearch
+kafka-python
+loguru
+pandas
+matplotlib
+dataframe-image
+numpy
+seaborn

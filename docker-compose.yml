@@ -69,7 +69,7 @@ services:
   python:
     build: ./python
     container_name: python
-    command: sh -c "sleep 20s ; python3 main.py"
+    command: sh -c "sleep 20s ; python3 /usr/app/src/main.py"
     restart: no
     depends_on:
       - mysql
@@ -77,8 +77,8 @@ services:
       - memcached
       - elasticsearch
     volumes:
-      - ./logs:/usr/app/src/logs
-      - ./output:/usr/app/src/output
+      - ./logs:/usr/app/logs
+      - ./output:/usr/app/output
 
   prometheus:
     image: prom/prometheus
