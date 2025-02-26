@@ -14,13 +14,13 @@ def fetch_and_save_alerts_memcached(alert_id, cursor):
     alerts_memcached = client_memcached.get(cache_key) 
 
     if not alerts_memcached:
-        logger.info("\nData not found in cache, searching in MySQL database...") 
+        logger.info("Data not found in cache, searching in MySQL database...\n") 
         cursor.execute(sql_alerts_query, (alert_id,)) 
         alerts_memcached = cursor.fetchall()
         client_memcached.set(cache_key, alerts_memcached, expire=300)
         logger.debug(alerts_memcached)
     else: 
-        logger.info(f"\nData found in cache:\n{alerts_memcached}")
+        logger.info(f"Data found in cache:\n{alerts_memcached}")
     ##return alerts_memcached
     
     

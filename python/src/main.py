@@ -16,20 +16,16 @@ from memcache_handler import create_memcache_client
 from fetching_data_from_cache import fetch_and_save_alerts_memcached
 from visualization import create_table_png, create_bar_plot, create_linear_plot
 from config import MYSQL_CONFIG
-
-
+from elasticsearch import helpers
 
 
 start_time = time.time()
-
 
 mysql_conn = create_mysql_connection(**MYSQL_CONFIG)
 kafka_producer = create_kafka_producer()
 es_client = create_elasticsearch_client()
 
-
 cursor = mysql_conn.cursor()
-
 
 Topic_Name= "alert"
 Group_id = "alerts"
@@ -40,15 +36,19 @@ insert_alert_query = ("INSERT INTO alerts "
                       "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
 
 # **Generate random alerts and send them to mysql kafka and elasticsearch**
-for x in range(20):
+for i in range(1,21):
     alert = generate_alert()
     kafka_producer.send(Topic_Name, value=alert["message"])
     cursor.execute(insert_alert_query, alert)
-    es_client.index(index="alerts", id=str(uuid.uuid4()), document=alert)
+    es_client.index(index="alerts", id = i, document=alert)
 
 kafka_producer.flush()
 mysql_conn.commit()
 logger.info("Data inserted successfully\n")
+
+resp=es_client.get(index="alerts", id=3)
+logger.info(resp)
+
 
 
 # **Consuming messages kafka**
@@ -60,15 +60,14 @@ kafka_consumer = create_kafka_consumer(Topic_Name,Group_id)
 
 # **Retrieve related data form MYSQL or Memcached**
 retriving_related_data_process_start = time.time()
-
+logger.info(f"Retriving data process start seconds.\n")
 fetch_and_save_alerts_memcached(3, cursor)
 
 retriving_related_data_process_end = time.time()
-logger.info(f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.")
+logger.info(f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.\n")
 
 
-
-# **Enrichinh data - Adding risk score and hashfield**
+# **Enrichinh data - Adding risk score and hashfield**           ##to do maybe combine it with fetching data from memcached first
 cursor.execute("SHOW COLUMNS FROM alerts LIKE 'HashField'")
 exists = cursor.fetchone()
 if not exists:
@@ -90,7 +89,7 @@ severity_mapping = {
     "Critical": 8
 }
 
-logger.info(f"\nStarting alerts enrichment process: ")
+logger.info(f"Starting alerts enrichment process: \n")
 alerts_processing_start = time.time()
 
 for alert in alerts_mysql:
@@ -117,7 +116,7 @@ for alert in alerts_mysql:
 mysql_conn.commit()
 
 alerts_processing_end = time.time()
-logger.info(f"Processing alerts took {alerts_processing_end - alerts_processing_start:.4f} seconds.")
+logger.info(f"Processing alerts took {alerts_processing_end - alerts_processing_start:.4f} seconds.\n")
 
 # **Sending enriched data back to kafka and elasticsearch**
 
@@ -126,12 +125,25 @@ rows = cursor.fetchall()
 columns = [desc[0] for desc in cursor.description]
 enriched_data = [dict(zip(columns, row)) for row in rows]
 
-logger.debug(enriched_data)
+logger.debug(enriched_data[ :4])
+
+
+actions_es = []
+for alert in enriched_data:
+    action = {
+        "_op_type": "update",
+        "_index": "alerts",
+        "_id": alert["Alertid"],
+        "doc": alert,
+        "doc_as_upsert": True
+    }
+    actions_es.append(action)
+
+helpers.bulk(es_client , actions_es)
 
 
 for alert in enriched_data:
     kafka_producer.send(Topic_Name, value=alert["Message"])
-    es_client.index(index="alerts", id=str(uuid.uuid4()), document=alert)
     if alert["SeverityLevel"] == "Warning":
         logger.warning(f"{alert['Message']}\n")
     if alert["SeverityLevel"] == "Error":
@@ -144,11 +156,35 @@ logger.info("\nData enriched\n")
 
 
 # **Exploring alert data making plots**
-
-
 create_table_png(enriched_data)
 create_bar_plot(enriched_data)
 create_linear_plot(enriched_data)
+
+#**Testing ES Querries**
+
+resp= es_client.mget(index = "alerts", body={"ids": ["3","6"]})
+logger.info(resp)
+
+resp= es_client.count(index = "alerts")
+count=resp["count"]
+logger.info(count)
+
+resp = es_client.search(index="alerts", body={
+    "query": {
+        "bool": {
+            "filter": [  
+                {"term": {"SeverityLevel.keyword": "Critical Error"}}
+            ]
+        }
+    }
+})
+n_hits= resp['hits']['total']['value']
+logger.info(f"Found {n_hits} documents in alerts")
+
+retrieved_documets= resp["hits"]["hits"]
+
+
+
 
 
 # **closing connections**
@@ -159,9 +195,9 @@ es_client.close()
 cursor.close()
 mysql_conn.close()
 
-logger.info("End of the script")
+logger.info("End of the script\n")
 end_time = time.time()
-logger.info(f"\nTotal execution time: {end_time - start_time:.4f} seconds.")
+logger.info(f"Total execution time: {end_time - start_time:.4f} seconds.")
 
 
 

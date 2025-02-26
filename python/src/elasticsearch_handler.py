@@ -11,3 +11,7 @@ def create_elasticsearch_client():
     except Exception  as e:
         logger.error(f"ElasticSearch - Error has ocured while trying to connect to DB: '{e}'")
         return None
+
+
+
+
