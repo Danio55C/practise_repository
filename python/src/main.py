@@ -67,7 +67,7 @@ retriving_related_data_process_end = time.time()
 logger.info(f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.\n")
 
 
-# **Enrichinh data - Adding risk score and hashfield**           ##to do maybe combine it with fetching data from memcached first
+# **Enrichinh data - Adding risk score and hashfield**           ##to do - maybe combine it with fetching data from memcached first
 cursor.execute("SHOW COLUMNS FROM alerts LIKE 'HashField'")
 exists = cursor.fetchone()
 if not exists:
@@ -183,9 +183,32 @@ logger.info(f"Found {n_hits} documents in alerts")
 
 retrieved_documets= resp["hits"]["hits"]
 
-
-
-
+resp=es_client.search(index = "alerts", body={
+    "query": {
+        "bool": {
+            "filter": [
+                {"range": {"Timestamp": {"gte": "now-7d/d", "lte": "now/d"}}},  
+                {"terms": {"SeverityLevel.keyword": ["Critical Error"]}}  
+            ]
+        }
+    },
+            "aggs": {
+                "max_RiskScore": {
+                    "max": {
+                        "field": "RiskScore"
+                    }
+                }
+            }
+        } 
+    
+)
+    
+                 
+n_hits= resp['hits']['total']['value']
+retrieved_documets= resp["hits"]["hits"]
+logger.info(retrieved_documets)
+max_RiskScore= resp['aggregations']['max_RiskScore']['value']
+logger.info(f"MAx Risk: {max_RiskScore}")
 
 # **closing connections**
 kafka_producer.close()
