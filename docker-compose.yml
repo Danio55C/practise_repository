@@ -81,6 +81,9 @@ services:
   python:
     build: ./python
     container_name: python
+    labels:
+      logging: "promtail"
+      logging_jobname: "python_logs"
     command: sh -c "sleep 20s ; python3 /usr/app/src/main.py"
     restart: no
     depends_on:
@@ -117,7 +120,20 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=123456
     networks:
-      - monitoring    
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+     - ./promtail.yml:/etc/promtail/promtail.yml
+    command:
+     -config.file=/etc/promtail/promtail.yml
+     -config.expand-env=true
+    depends_on:
+      - elasticsearch  
+    networks:
+      - monitoring        
 
 #internal network only for the conteners in this compose
 networks:
