@@ -39,6 +39,19 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
     restart: always
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+    - 8080:8080
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:r
+    networks:
+      - monitoring
+
 
   memcached:
       image: memcached:latest
@@ -65,7 +78,6 @@ services:
       - es_data:/usr/share/elasticsearch/data  
 
 
-
   python:
     build: ./python
     container_name: python
@@ -84,17 +96,24 @@ services:
     image: prom/prometheus
     ports:
       - 9090:9090
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     container_name: prometheus 
     networks:
       - monitoring
+    depends_on:
+    - cadvisor  
 
   grafana:
     image: grafana/grafana
     ports:
       - 3000:3000
-    container_name: grafana  
+    container_name: grafana
+    volumes:
+       - grafana_data:/grafana  
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=123456
     networks:
@@ -109,7 +128,11 @@ volumes:
     es_data:
       driver: local
     mysql_data:
-      driver: local    
+      driver: local
+    prometheus_data: 
+      driver: local
+    grafana_data:
+      driver: local          
 
  
   
