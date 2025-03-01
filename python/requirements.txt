@@ -8,3 +8,4 @@ matplotlib
 dataframe-image
 numpy
 seaborn
+prometheus_client

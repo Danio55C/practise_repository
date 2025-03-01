@@ -39,6 +39,19 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 1
     restart: always
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+    - 8080:8080
+    volumes:
+    - /:/rootfs:ro
+    - /var/run:/var/run:rw
+    - /sys:/sys:ro
+    - /var/lib/docker/:/var/lib/docker:r
+    networks:
+      - monitoring
+
 
   memcached:
       image: memcached:latest
@@ -65,10 +78,12 @@ services:
       - es_data:/usr/share/elasticsearch/data  
 
 
-
   python:
     build: ./python
     container_name: python
+    labels:
+      logging: "promtail"
+      logging_jobname: "python_logs"
     command: sh -c "sleep 20s ; python3 /usr/app/src/main.py"
     restart: no
     depends_on:
@@ -79,26 +94,58 @@ services:
     volumes:
       - ./logs:/usr/app/logs
       - ./output:/usr/app/output
+      - ./logs:/var/log/python_logs
 
   prometheus:
     image: prom/prometheus
     ports:
       - 9090:9090
+    command:
+    - --config.file=/etc/prometheus/prometheus.yml
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     container_name: prometheus 
     networks:
       - monitoring
+    depends_on:
+    - cadvisor  
 
   grafana:
     image: grafana/grafana
     ports:
       - 3000:3000
-    container_name: grafana  
+    container_name: grafana
+    volumes:
+       - grafana_data:/grafana  
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=123456
     networks:
-      - monitoring    
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+     - ./promtail.yml:/etc/promtail/promtail.yaml
+     - ./logs:/var/log/python_logs
+    command:
+     -config.file=/etc/promtail/promtail.yaml
+    depends_on:
+      - elasticsearch  
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - 3100:3100
+    volumes:
+      - ./loki.yml:/etc/loki/loki.yaml
+    networks:
+      - monitoring      
+
 
 #internal network only for the conteners in this compose
 networks:
@@ -109,7 +156,11 @@ volumes:
     es_data:
       driver: local
     mysql_data:
-      driver: local    
+      driver: local
+    prometheus_data: 
+      driver: local
+    grafana_data:
+      driver: local          
 
  
   

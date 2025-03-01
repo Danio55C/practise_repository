@@ -19,6 +19,8 @@ from config import MYSQL_CONFIG
 from elasticsearch import helpers
 
 
+
+
 start_time = time.time()
 
 mysql_conn = create_mysql_connection(**MYSQL_CONFIG)
@@ -26,6 +28,8 @@ kafka_producer = create_kafka_producer()
 es_client = create_elasticsearch_client()
 
 cursor = mysql_conn.cursor()
+
+
 
 Topic_Name= "alert"
 Group_id = "alerts"
@@ -44,10 +48,10 @@ for i in range(1,21):
 
 kafka_producer.flush()
 mysql_conn.commit()
-logger.info("Data inserted successfully\n")
+logger.success("Data inserted successfully\n")
 
 resp=es_client.get(index="alerts", id=3)
-logger.info(resp)
+logger.success(resp)
 
 
 
@@ -60,11 +64,11 @@ kafka_consumer = create_kafka_consumer(Topic_Name,Group_id)
 
 # **Retrieve related data form MYSQL or Memcached**
 retriving_related_data_process_start = time.time()
-logger.info(f"Retriving data process start seconds.\n")
+logger.trace(f"Retriving data process start seconds.\n")
 fetch_and_save_alerts_memcached(3, cursor)
 
 retriving_related_data_process_end = time.time()
-logger.info(f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.\n")
+logger.log("EXECUTION_TIME", f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.\n")
 
 
 # **Enrichinh data - Adding risk score and hashfield**           ##to do - maybe combine it with fetching data from memcached first
@@ -89,7 +93,7 @@ severity_mapping = {
     "Critical": 8
 }
 
-logger.info(f"Starting alerts enrichment process: \n")
+logger.trace(f"Starting alerts enrichment process: \n")
 alerts_processing_start = time.time()
 
 for alert in alerts_mysql:
@@ -116,7 +120,7 @@ for alert in alerts_mysql:
 mysql_conn.commit()
 
 alerts_processing_end = time.time()
-logger.info(f"Processing alerts took {alerts_processing_end - alerts_processing_start:.4f} seconds.\n")
+logger.log("EXECUTION_TIME", f"Processing alerts took {alerts_processing_end - alerts_processing_start:.4f} seconds.\n")
 
 # **Sending enriched data back to kafka and elasticsearch**
 
@@ -152,7 +156,7 @@ for alert in enriched_data:
         logger.critical(f"{alert['Message']}\n")      
 
 kafka_producer.flush()
-logger.info("\nData enriched\n")
+logger.success("\nData enriched\n")
 
 
 # **Exploring alert data making plots**
@@ -163,11 +167,11 @@ create_linear_plot(enriched_data)
 #**Testing ES Querries**
 
 resp= es_client.mget(index = "alerts", body={"ids": ["3","6"]})
-logger.info(resp)
+logger.debug(resp)
 
 resp= es_client.count(index = "alerts")
 count=resp["count"]
-logger.info(count)
+logger.debug(count)
 
 resp = es_client.search(index="alerts", body={
     "query": {
@@ -179,7 +183,7 @@ resp = es_client.search(index="alerts", body={
     }
 })
 n_hits= resp['hits']['total']['value']
-logger.info(f"Found {n_hits} documents in alerts")
+logger.debug(f"Found {n_hits} documents in alerts")
 
 retrieved_documets= resp["hits"]["hits"]
 
@@ -206,9 +210,9 @@ resp=es_client.search(index = "alerts", body={
                  
 n_hits= resp['hits']['total']['value']
 retrieved_documets= resp["hits"]["hits"]
-logger.info(retrieved_documets)
+logger.debug(retrieved_documets)
 max_RiskScore= resp['aggregations']['max_RiskScore']['value']
-logger.info(f"MAx Risk: {max_RiskScore}")
+logger.debug(f"MAx Risk: {max_RiskScore}")
 
 # **closing connections**
 kafka_producer.close()
@@ -218,9 +222,9 @@ es_client.close()
 cursor.close()
 mysql_conn.close()
 
-logger.info("End of the script\n")
+logger.success("End of the script\n")
 end_time = time.time()
-logger.info(f"Total execution time: {end_time - start_time:.4f} seconds.")
+logger.log("EXECUTION_TIME", f"Total execution time: {end_time - start_time:.4f} seconds.")
 
 
 
