@@ -25,3 +25,7 @@ MEMCACHED_CONFIG = {
 
 LOG_FILE_PATH = "/usr/app/logs/file_logs.log"
 os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+
+
+
+
