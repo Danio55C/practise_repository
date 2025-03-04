@@ -29,6 +29,10 @@ cursor = mysql_conn.cursor()
 Topic_Name= "alert"
 Group_id = "alerts"
 
+# insert alerts sql querry
+insert_alert_query = ("INSERT INTO alerts "
+                      "(AlertName, SeverityLevel, Timestamp, Message) "
+                      "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
 
 # **Generate random alerts and send them to mysql kafka and elasticsearch**
 for i in range(1,21):
@@ -37,10 +41,6 @@ for i in range(1,21):
     cursor.execute(insert_alert_query, alert)
     es_client.index(index="alerts", id = i, document=alert)
 
-# insert alerts sql querry
-insert_alert_query = ("INSERT INTO alerts "
-                      "(AlertName, SeverityLevel, Timestamp, Message) "
-                      "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
 
 kafka_producer.flush()
 mysql_conn.commit()
@@ -51,7 +51,7 @@ logger.success(resp)
 
 
 # **Consuming messages kafka**
-kafka_consumer = create_kafka_consumer(Topic_Name,Group_id)
+kafka_consumer = create_kafka_consumer(Topic_Name, Group_id)
 
 # for message_alerts in consumer:
 #     logger.error(f"Consumer received message: {message_alerts.value}\n")
@@ -88,6 +88,8 @@ severity_mapping = {
 logger.trace(f"Starting alerts enrichment process: \n")
 alerts_processing_start = time.time()
 
+
+
 for alert in alerts:
     alert_id, alert_name, severity_level, timestamp, message = alert
     cursor.execute("SELECT COUNT(*) FROM alerts WHERE AlertName = %s", (alert_name,))
@@ -106,6 +108,7 @@ for alert in alerts:
     message = f"An {severity_level} has occurred: {alert_name} and {risk_score} risk score on {str(timestamp)}"
     hash_field = hashlib.sha256(json.dumps(alert_data, sort_keys=True).encode()).hexdigest()
     
+    alert_id = int(alert["Alertid"])
     cursor.execute("UPDATE alerts SET HashField = %s, RiskScore = %s, Message = %s WHERE Alertid = %s",
                    (hash_field, risk_score, message, alert_id))  
 
@@ -115,16 +118,10 @@ alerts_processing_end = time.time()
 logger.log("EXECUTION_TIME", f"Processing alerts took {alerts_processing_end - alerts_processing_start:.4f} seconds.\n")
 
 # **Sending enriched data back to kafka and elasticsearch**
-
-cursor.execute("SELECT * FROM alerts")
-rows = cursor.fetchall()
-columns = [desc[0] for desc in cursor.description]
-enriched_data = [dict(zip(columns, row)) for row in rows]
-
-logger.debug(enriched_data[ :4])
-
+enriched_data=fetch_and_save_alerts_memcached(cursor)
 
 actions_es = []
+
 for alert in enriched_data:
     action = {
         "_op_type": "update",
@@ -136,7 +133,6 @@ for alert in enriched_data:
     actions_es.append(action)
 
 helpers.bulk(es_client , actions_es)
-
 
 for alert in enriched_data:
     kafka_producer.send(Topic_Name, value=alert["Message"])
@@ -150,14 +146,12 @@ for alert in enriched_data:
 kafka_producer.flush()
 logger.success("\nData enriched\n")
 
-
 # **Exploring alert data making plots**
 create_table_png(enriched_data)
 create_bar_plot(enriched_data)
 create_linear_plot(enriched_data)
 
 #**Testing ES Querries**
-
 resp= es_client.mget(index = "alerts", body={"ids": ["3","6"]})
 logger.debug(resp)
 

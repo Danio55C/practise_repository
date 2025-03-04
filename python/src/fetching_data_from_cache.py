@@ -1,6 +1,5 @@
 from memcache_handler import create_memcache_client
 from loguru import logger
-import json
 
 
 # mysql_conn = create_mysql_connection()
@@ -18,13 +17,13 @@ def fetch_and_save_alert_based_on_ID_memcached(alert_id, cursor):
         if not alerts_memcached:
             logger.info("Data not found in cache, searching in MySQL database...\n") 
             cursor.execute(sql_alerts_query, (alert_id,)) 
-            alerts_memcached = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]  
+            alerts_memcached = [dict(zip(columns, row)) for row in cursor.fetchall()] 
             client_memcached.set(cache_key, alerts_memcached, expire=400)
             return alerts_memcached
         else: 
             logger.info(f"Data found in cache")
             return alerts_memcached
-            ##return alerts_memcached
     except Exception as e:
         logger.warning(f"Data not found anywhere: {e}")
         return None
@@ -41,13 +40,13 @@ def fetch_and_save_alerts_memcached(cursor):
         if not alerts_memcached:
             logger.info("Data not found in cache, searching in MySQL database...\n") 
             cursor.execute(sql_alerts_query) 
-            alerts_memcached = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]  
+            alerts_memcached = [dict(zip(columns, row)) for row in cursor.fetchall()] 
             client_memcached.set(cache_key, alerts_memcached, expire=400)
             return alerts_memcached
         else: 
             logger.info(f"Data found in cache")
             return alerts_memcached
-            ##return alerts_memcached
     except Exception as e:
         logger.warning(f"Data not found anywhere: {e}")
         return None       

@@ -10,7 +10,7 @@ def create_kafka_producer():
             bootstrap_servers=KAFKA_CONFIG["bootstrap_servers"],  
             value_serializer=lambda m: json.dumps(m).encode('ascii')  
         )
-        logger.info("KafkaProducer - Success connectiong to broker")
+        logger.success("KafkaProducer - Success connectiong to broker")
         return producer
     except Exception as e:
         logger.error(f"KafkaProducer - Error has ocured while connection to broker: {e}")
