@@ -12,13 +12,10 @@ from mysqldb import create_mysql_connection
 from kafka_handler import create_kafka_producer, create_kafka_consumer
 from elasticsearch_handler import create_elasticsearch_client
 from alert_generator import generate_alert
-from memcache_handler import create_memcache_client
 from fetching_data_from_cache import fetch_and_save_alerts_memcached
 from visualization import create_table_png, create_bar_plot, create_linear_plot
 from config import MYSQL_CONFIG
 from elasticsearch import helpers
-
-
 
 
 start_time = time.time()
@@ -29,15 +26,9 @@ es_client = create_elasticsearch_client()
 
 cursor = mysql_conn.cursor()
 
-
-
 Topic_Name= "alert"
 Group_id = "alerts"
 
-# insert alerts sql querry
-insert_alert_query = ("INSERT INTO alerts "
-                      "(AlertName, SeverityLevel, Timestamp, Message) "
-                      "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
 
 # **Generate random alerts and send them to mysql kafka and elasticsearch**
 for i in range(1,21):
@@ -46,13 +37,17 @@ for i in range(1,21):
     cursor.execute(insert_alert_query, alert)
     es_client.index(index="alerts", id = i, document=alert)
 
+# insert alerts sql querry
+insert_alert_query = ("INSERT INTO alerts "
+                      "(AlertName, SeverityLevel, Timestamp, Message) "
+                      "VALUES (%(alert_name)s, %(severity_level)s, %(timestamp)s, %(message)s)")
+
 kafka_producer.flush()
 mysql_conn.commit()
 logger.success("Data inserted successfully\n")
 
-resp=es_client.get(index="alerts", id=3)
+resp=es_client.get(index="alerts", id=3)  ##testing
 logger.success(resp)
-
 
 
 # **Consuming messages kafka**
@@ -65,13 +60,12 @@ kafka_consumer = create_kafka_consumer(Topic_Name,Group_id)
 # **Retrieve related data form MYSQL or Memcached**
 retriving_related_data_process_start = time.time()
 logger.trace(f"Retriving data process start seconds.\n")
-fetch_and_save_alerts_memcached(3, cursor)
+alerts=fetch_and_save_alerts_memcached(cursor)
 
 retriving_related_data_process_end = time.time()
 logger.log("EXECUTION_TIME", f"Retriving data took: {retriving_related_data_process_end - retriving_related_data_process_start:.4f} seconds.\n")
 
-
-# **Enrichinh data - Adding risk score and hashfield**           ##to do - maybe combine it with fetching data from memcached first
+# **Enriching data - Adding risk score and hashfield**           
 cursor.execute("SHOW COLUMNS FROM alerts LIKE 'HashField'")
 exists = cursor.fetchone()
 if not exists:
@@ -84,9 +78,7 @@ if not exists:
 
 mysql_conn.commit()
 
-cursor.execute("SELECT Alertid, AlertName, SeverityLevel, Timestamp, Message FROM alerts")
-alerts_mysql = cursor.fetchall()
-
+##alerts enrichment process
 severity_mapping = {
     "Warning": 1,
     "Error": 4,
@@ -96,7 +88,7 @@ severity_mapping = {
 logger.trace(f"Starting alerts enrichment process: \n")
 alerts_processing_start = time.time()
 
-for alert in alerts_mysql:
+for alert in alerts:
     alert_id, alert_name, severity_level, timestamp, message = alert
     cursor.execute("SELECT COUNT(*) FROM alerts WHERE AlertName = %s", (alert_name,))
     past_alerts_count = cursor.fetchone()[0]
@@ -206,8 +198,7 @@ resp=es_client.search(index = "alerts", body={
         } 
     
 )
-    
-                 
+                     
 n_hits= resp['hits']['total']['value']
 retrieved_documets= resp["hits"]["hits"]
 logger.debug(retrieved_documets)
